@@ -131,7 +131,7 @@ class Pool {
 
         generation += 1
 
-        // TODO Save generation
+        gameRunner!!.save("backup.$generation.dat")
     }
 
     fun crossover(g1in : Genome, g2in: Genome) : Genome {
