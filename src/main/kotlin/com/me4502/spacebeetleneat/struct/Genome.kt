@@ -1,7 +1,6 @@
 package com.me4502.spacebeetleneat.struct
 
 import com.me4502.spacebeetleneat.*
-import com.sun.xml.internal.fastinfoset.alphabet.BuiltInRestrictedAlphabets.table
 import java.util.concurrent.ThreadLocalRandom
 
 val MUTATE_CONNECTIONS_CHANCE = 0.25
@@ -19,7 +18,7 @@ val DELTA_THRESHOLD = 1.0
 class Genome : Cloneable {
     val genes : MutableList<Gene> = ArrayList()
     var network : Network? = null
-    var fitness = 0
+    var fitness = Int.MIN_VALUE
     var adjustedFitness = 0
     var maxNeuron = 0
     var globalRank = 0
@@ -38,7 +37,7 @@ class Genome : Cloneable {
             net.neurons[i] = Neuron()
         }
 
-        for (i in 0..OUTPUT_NAMES.size) {
+        for (i in 0..OUTPUT_INDEX.size) {
             net.neurons[MAX_NODES + i] = Neuron()
         }
 
@@ -149,7 +148,7 @@ class Genome : Cloneable {
             }
         }
 
-        for (o in 0..OUTPUT_NAMES.size) {
+        for (o in 0..OUTPUT_INDEX.size) {
             neurons[MAX_NODES + o] = true
         }
 
@@ -324,5 +323,9 @@ class Genome : Cloneable {
         genome.disableMutationChance = this.disableMutationChance
 
         return genome
+    }
+
+    override fun toString(): String {
+        return "Genome[fitness=$fitness]"
     }
 }
