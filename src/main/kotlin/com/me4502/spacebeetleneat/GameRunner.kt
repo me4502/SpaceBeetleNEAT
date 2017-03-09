@@ -15,15 +15,17 @@ import com.me4502.spacebeetle.desktop.DesktopLauncher
 import com.me4502.spacebeetleneat.struct.Genome
 import com.me4502.spacebeetleneat.struct.Pool
 import com.me4502.spacebeetleneat.struct.Species
+import java.io.File
+import java.io.PrintWriter
 
-class GameRunner {
-
-    val GAME_WIDTH = 480
-    val GAME_HEIGHT = 640
-
+class GameRunner(var callback: () -> Unit) {
     var gameInstance : AutomatedSpaceBeetle? = null
     var pool : Pool? = null
     var timeout : Int = 0
+
+    var lastInput : MutableList<Int> = ArrayList()
+
+    val runFolder = System.currentTimeMillis()
 
     fun getScore(): Int {
         return gameInstance!!.game.score
@@ -37,22 +39,32 @@ class GameRunner {
         val xWidth = GAME_WIDTH / INPUT_WIDTH
         val yHeight = GAME_HEIGHT / INPUT_HEIGHT
 
-        for (x in 0..GAME_WIDTH-xWidth step xWidth) {
-            for (y in 0..GAME_HEIGHT-yHeight step yHeight) {
+        for (y in 0..GAME_HEIGHT-yHeight step yHeight) {
+            for (x in 0..GAME_WIDTH-xWidth step xWidth) {
                 var inputValue = 0
 
-                for (entity in gameInstance!!.game.entities) {
-                    if (entity is Debris || entity is Player) {
-                        val converted = gameInstance!!.camera.project(Vector3(entity.position.x, entity.position.y, 0F))
-                        val posX = converted.x
-                        val posY = converted.y
+                var converted = gameInstance!!.camera.project(Vector3(gameInstance!!.game.player.sprite.x, gameInstance!!.game.player.sprite.y, 0F))
+                var posX = converted.x
+                var posY = converted.y
 
-                        val rect1 = Rectangle(posX, posY, entity.sprite.width, entity.sprite.height)
-                        val rect2 = Rectangle(x.toFloat(), y.toFloat(), xWidth.toFloat(), yHeight.toFloat())
+                var rect1 = Rectangle(posX, posY, gameInstance!!.game.player.sprite.width, gameInstance!!.game.player.sprite.height)
+                val rect2 = Rectangle(x.toFloat(), y.toFloat(), xWidth.toFloat(), yHeight.toFloat())
 
-                        if (rect1.overlaps(rect2)) {
-                            inputValue = if (entity is Debris) 1 else -1
-                            break
+                if (rect1.overlaps(rect2)) {
+                    inputValue = -1
+                } else {
+                    for (entity in gameInstance!!.game.entities) {
+                        if (entity is Debris) {
+                            converted = gameInstance!!.camera.project(Vector3(entity.sprite.x, entity.sprite.y, 0F))
+                            posX = converted.x
+                            posY = converted.y
+
+                            rect1 = Rectangle(posX, posY, entity.sprite.width, entity.sprite.height)
+
+                            if (rect1.overlaps(rect2)) {
+                                inputValue = 1
+                                break
+                            }
                         }
                     }
                 }
@@ -60,6 +72,9 @@ class GameRunner {
                 inputs.add(inputValue)
             }
         }
+
+        lastInput.clear()
+        lastInput.addAll(inputs)
 
         return inputs
     }
@@ -82,6 +97,8 @@ class GameRunner {
         config.height = GAME_HEIGHT
         gameInstance = AutomatedSpaceBeetle(DesktopLauncher())
         LwjglApplication(gameInstance, config)
+
+        save("final.save.dat")
     }
 
     fun initializeRun() {
@@ -164,42 +181,82 @@ class GameRunner {
                 gameRunner!!.timeout = TIMEOUT_LIMIT
             }
 
-            gameRunner!!.timeout -= 1
+            if (pool.currentFrame % FRAMES_PER_UPDATE == 0) {
+                gameRunner!!.timeout -= 1
 
-            if (pool.currentFrame % 20 == 0) {
                 gameRunner!!.evaluateCurrent()
-            }
 
-            if (gameRunner!!.timeout <= 0 || (overlay != null && overlay.timer == 0)) {
-                // This run is over.
-                if (overlay == null) {
-                    // If timeout, reset the game.
-                    overlay = StartOverlay(true)
+                if (gameRunner!!.timeout <= 0 || (overlay != null && overlay.timer == 0)) {
+                    // This run is over.
+                    if (overlay == null) {
+                        // If timeout, reset the game.
+                        overlay = StartOverlay(true)
+                    }
+
+                    // Get rid of the game start overlay.
+                    for (i in 0..200) {
+                        overlay.interact(-90, -90)
+                    }
+
+                    // The fitness heavily favours score. Time is in there only so that it favours the faster of two identical scores.
+                    val fitness = (SpaceBeetle.inst().getFileStorage().lastscore * 2) - (pool.currentFrame / 60)
+                    genome.fitness = fitness
+                    if (fitness > pool.maxFitness) {
+                        pool.maxFitness = fitness
+                        gameRunner!!.save("backup.${pool.generation}.dat")
+                    }
+
+                    println("Species: ${pool.currentSpecies}, Genome: ${pool.currentGenome}, Fitness: $fitness, Frame: ${pool
+                            .currentFrame}")
+
+                    gameRunner!!.callback.invoke()
+
+                    pool.currentSpecies = 0
+                    pool.currentGenome = 0
+                    while (pool.hasFitnessBeenMeasured()) {
+                        pool.nextGenome()
+                    }
+
+                    gameRunner!!.initializeRun()
                 }
-
-                // Get rid of the game start overlay.
-                overlay.interact(-90, -90)
-
-                // The fitness heavily favours score. Time is in there only so that it favours the faster of two identical scores.
-                val fitness = (SpaceBeetle.inst().getFileStorage().lastscore * 2) - (pool.currentFrame / 60)
-                genome.fitness = fitness
-                if (fitness > pool.maxFitness) {
-                    pool.maxFitness = fitness
-                }
-
-                pool.currentSpecies = 0
-                pool.currentGenome = 0
-                while (pool.hasFitnessBeenMeasured()) {
-                    pool.nextGenome()
-                }
-
-                println("Species: ${pool.currentSpecies}, Genome: ${pool.currentGenome}, Fitness: $fitness, Frame: ${pool
-                        .currentFrame}")
-
-                gameRunner!!.initializeRun()
             }
 
             pool.currentFrame += 1
         }
+    }
+
+    fun save(filename : String) {
+        val file : File = File(File("state", runFolder.toString()), filename)
+        file.parentFile.mkdirs()
+        val writer : PrintWriter = PrintWriter(file)
+
+        writer.println(pool!!.generation)
+        writer.println(pool!!.maxFitness)
+        writer.println(pool!!.species.size)
+        for (species in pool!!.species) {
+            writer.println(species.topFitness)
+            writer.println(species.staleness)
+            writer.println(species.genomes.size)
+            for (genome in species.genomes) {
+                writer.println(genome.fitness)
+                writer.println(genome.maxNeuron)
+                writer.println(genome.biasMutationChance)
+                writer.println(genome.disableMutationChance)
+                writer.println(genome.enableMutationChance)
+                writer.println(genome.linkMutationChance)
+                writer.println(genome.mutateConnectionsChance)
+                writer.println(genome.nodeMutationChance)
+                writer.println(genome.genes.size)
+                for (gene in genome.genes) {
+                    writer.println(gene.input)
+                    writer.println(gene.output)
+                    writer.println(gene.weight)
+                    writer.println(gene.innovation)
+                    writer.println(gene.enabled)
+                }
+            }
+        }
+
+        writer.close()
     }
 }
