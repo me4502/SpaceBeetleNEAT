@@ -1,7 +1,10 @@
 package com.me4502.spacebeetleneat
 
 import com.badlogic.gdx.Input
-import java.awt.*
+import java.awt.Color
+import java.awt.Dimension
+import java.awt.FlowLayout
+import java.awt.Graphics
 import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -14,7 +17,7 @@ val INPUT_WIDTH = 60
 val INPUT_HEIGHT = 80
 
 val OUTPUT_INDEX = arrayOf(Input.Keys.A, Input.Keys.S, Input.Keys.W, Input.Keys.D)
-val INPUTS = INPUT_WIDTH * INPUT_HEIGHT
+val INPUTS = (INPUT_WIDTH * INPUT_HEIGHT) + 2
 
 val PERTURB_CHANCE = 0.90
 val CROSSOVER_CHANCE = 0.75
@@ -57,7 +60,7 @@ fun main(args: Array<String>) {
             panel.isVisible = false
         }
 
-        val pool = gameRunner!!.pool
+        val pool = gameRunner!!.population
         val species = pool!!.species[pool.currentSpecies]
         val genome = species.genomes[pool.currentGenome]
 
