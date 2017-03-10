@@ -193,7 +193,7 @@ class Genome : Cloneable {
             return
         }
 
-        newLink.innovation = gameRunner!!.pool!!.innovate()
+        newLink.innovation = gameRunner!!.population!!.innovate()
         newLink.weight = ThreadLocalRandom.current().nextDouble() * 4.0 - 2.0
 
         genes.add(newLink)
@@ -215,13 +215,13 @@ class Genome : Cloneable {
         val gene1 = gene.clone()
         gene1.output = maxNeuron
         gene1.weight = 1.0
-        gene1.innovation = gameRunner!!.pool!!.innovate()
+        gene1.innovation = gameRunner!!.population!!.innovate()
         gene1.enabled = true
         genes.add(gene1)
 
         val gene2 = gene.clone()
         gene2.input = maxNeuron
-        gene2.innovation = gameRunner!!.pool!!.innovate()
+        gene2.innovation = gameRunner!!.population!!.innovate()
         gene2.enabled = true
         genes.add(gene2)
     }

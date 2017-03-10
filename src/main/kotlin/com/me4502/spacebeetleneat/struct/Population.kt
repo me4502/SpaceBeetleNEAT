@@ -3,7 +3,7 @@ package com.me4502.spacebeetleneat.struct
 import com.me4502.spacebeetleneat.*
 import java.util.concurrent.ThreadLocalRandom
 
-class Pool {
+class Population {
     val species : MutableList<Species> = ArrayList()
     var generation = 0
     var innovation = OUTPUT_INDEX.size
