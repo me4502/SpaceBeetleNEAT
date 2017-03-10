@@ -7,20 +7,19 @@ import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
 import com.me4502.spacebeetle.Entities.Debris
-import com.me4502.spacebeetle.Entities.Player
 import com.me4502.spacebeetle.Overlays.StartOverlay
 import com.me4502.spacebeetle.SpaceBeetle
 import com.me4502.spacebeetle.SpaceBeetleLauncher
 import com.me4502.spacebeetle.desktop.DesktopLauncher
 import com.me4502.spacebeetleneat.struct.Genome
-import com.me4502.spacebeetleneat.struct.Pool
+import com.me4502.spacebeetleneat.struct.Population
 import com.me4502.spacebeetleneat.struct.Species
 import java.io.File
 import java.io.PrintWriter
 
 class GameRunner(var callback: () -> Unit) {
     var gameInstance : AutomatedSpaceBeetle? = null
-    var pool : Pool? = null
+    var population: Population? = null
     var timeout : Int = 0
 
     var lastInput : MutableList<Int> = ArrayList()
@@ -73,6 +72,9 @@ class GameRunner(var callback: () -> Unit) {
             }
         }
 
+        inputs.add(gameInstance!!.game.player.position.x.toInt())
+        inputs.add(gameInstance!!.game.player.position.y.toInt())
+
         lastInput.clear()
         lastInput.addAll(inputs)
 
@@ -80,8 +82,8 @@ class GameRunner(var callback: () -> Unit) {
     }
 
     fun run() {
-        if (pool == null) {
-            pool = Pool()
+        if (population == null) {
+            population = Population()
 
             for (i in 0..POPULATION) {
                 val basic = createBasicGenome()
@@ -97,17 +99,15 @@ class GameRunner(var callback: () -> Unit) {
         config.height = GAME_HEIGHT
         gameInstance = AutomatedSpaceBeetle(DesktopLauncher())
         LwjglApplication(gameInstance, config)
-
-        save("final.save.dat")
     }
 
     fun initializeRun() {
         // TODO load
-        pool!!.currentFrame = 0
+        population!!.currentFrame = 0
         timeout = TIMEOUT_LIMIT
 
-        val species = pool!!.species[pool!!.currentSpecies]
-        val genome = species.genomes[pool!!.currentGenome]
+        val species = population!!.species[population!!.currentSpecies]
+        val genome = species.genomes[population!!.currentGenome]
         genome.generateNetwork()
         if (gameInstance != null) {
             evaluateCurrent()
@@ -115,8 +115,8 @@ class GameRunner(var callback: () -> Unit) {
     }
 
     fun evaluateCurrent() {
-        val species = pool!!.species[pool!!.currentSpecies]
-        val genome = species.genomes[pool!!.currentGenome]
+        val species = population!!.species[population!!.currentSpecies]
+        val genome = species.genomes[population!!.currentGenome]
 
         val inputs = getInputs()
         val outputs = genome.network!!.evaluate(inputs)
@@ -141,7 +141,7 @@ class GameRunner(var callback: () -> Unit) {
 
     fun addToSpecies(child : Genome) {
         var foundSpecies = false
-        for (species in pool!!.species) {
+        for (species in population!!.species) {
             if (!foundSpecies && child.isSameSpecies(species.genomes[0])) {
                 species.genomes.add(child)
                 foundSpecies = true
@@ -152,7 +152,7 @@ class GameRunner(var callback: () -> Unit) {
         if (!foundSpecies) {
             val childSpecies = Species()
             childSpecies.genomes.add(child)
-            pool!!.species.add(childSpecies)
+            population!!.species.add(childSpecies)
         }
     }
 
@@ -172,7 +172,7 @@ class GameRunner(var callback: () -> Unit) {
         override fun render() {
             super.render()
 
-            val pool = gameRunner!!.pool
+            val pool = gameRunner!!.population
             val species = pool!!.species[pool.currentSpecies]
             val genome = species.genomes[pool.currentGenome]
 
@@ -230,10 +230,10 @@ class GameRunner(var callback: () -> Unit) {
         file.parentFile.mkdirs()
         val writer : PrintWriter = PrintWriter(file)
 
-        writer.println(pool!!.generation)
-        writer.println(pool!!.maxFitness)
-        writer.println(pool!!.species.size)
-        for (species in pool!!.species) {
+        writer.println(population!!.generation)
+        writer.println(population!!.maxFitness)
+        writer.println(population!!.species.size)
+        for (species in population!!.species) {
             writer.println(species.topFitness)
             writer.println(species.staleness)
             writer.println(species.genomes.size)
