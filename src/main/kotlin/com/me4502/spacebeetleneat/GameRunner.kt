@@ -9,12 +9,15 @@ import com.badlogic.gdx.math.Vector3
 import com.me4502.spacebeetle.Entities.Debris
 import com.me4502.spacebeetle.Overlays.StartOverlay
 import com.me4502.spacebeetle.SpaceBeetle
+import com.me4502.spacebeetle.SpaceBeetle.AI_MODE
 import com.me4502.spacebeetle.SpaceBeetleLauncher
 import com.me4502.spacebeetle.desktop.DesktopLauncher
 import com.me4502.spacebeetleneat.struct.Genome
 import com.me4502.spacebeetleneat.struct.Population
 import com.me4502.spacebeetleneat.struct.Species
+import java.io.BufferedReader
 import java.io.File
+import java.io.FileReader
 import java.io.PrintWriter
 
 class GameRunner(var callback: () -> Unit) {
@@ -42,28 +45,19 @@ class GameRunner(var callback: () -> Unit) {
             for (x in 0..GAME_WIDTH-xWidth step xWidth) {
                 var inputValue = 0
 
-                var converted = gameInstance!!.camera.project(Vector3(gameInstance!!.game.player.sprite.x, gameInstance!!.game.player.sprite.y, 0F))
-                var posX = converted.x
-                var posY = converted.y
-
-                var rect1 = Rectangle(posX, posY, gameInstance!!.game.player.sprite.width, gameInstance!!.game.player.sprite.height)
                 val rect2 = Rectangle(x.toFloat(), y.toFloat(), xWidth.toFloat(), yHeight.toFloat())
 
-                if (rect1.overlaps(rect2)) {
-                    inputValue = -1
-                } else {
-                    for (entity in gameInstance!!.game.entities) {
-                        if (entity is Debris) {
-                            converted = gameInstance!!.camera.project(Vector3(entity.sprite.x, entity.sprite.y, 0F))
-                            posX = converted.x
-                            posY = converted.y
+                for (entity in gameInstance!!.game.entities) {
+                    if (entity is Debris) {
+                        val converted = gameInstance!!.camera.project(Vector3(entity.sprite.x, entity.sprite.y, 0F))
+                        val posX = converted.x
+                        val posY = converted.y
 
-                            rect1 = Rectangle(posX, posY, entity.sprite.width, entity.sprite.height)
+                        val rect1 = Rectangle(posX, posY, entity.sprite.width, entity.sprite.height)
 
-                            if (rect1.overlaps(rect2)) {
-                                inputValue = 1
-                                break
-                            }
+                        if (rect1.overlaps(rect2)) {
+                            inputValue = 1
+                            break
                         }
                     }
                 }
@@ -97,6 +91,7 @@ class GameRunner(var callback: () -> Unit) {
         config.title = "SpaceBeetle Runner"
         config.width = GAME_WIDTH
         config.height = GAME_HEIGHT
+        AI_MODE = true
         gameInstance = AutomatedSpaceBeetle(DesktopLauncher())
         LwjglApplication(gameInstance, config)
     }
@@ -222,6 +217,12 @@ class GameRunner(var callback: () -> Unit) {
             }
 
             pool.currentFrame += 1
+        }
+
+        override fun dispose() {
+            super.dispose()
+
+            gameRunner!!.save("../last.state.dat")
         }
     }
 
