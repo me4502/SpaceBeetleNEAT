@@ -86,7 +86,7 @@ class Genome : Cloneable {
                 .filterNot { innovations.getOrDefault(it.innovation, true) }
                 .forEach { disjointGenes += 1 }
 
-        return disjointGenes / (Math.max(genes.size, otherGenes.size))
+        return disjointGenes / Math.max(genes.size, otherGenes.size)
     }
 
     /**
@@ -100,7 +100,7 @@ class Genome : Cloneable {
         }
 
         var weightDelta = 0.0
-        var occurences = 0
+        var occurences = 0.0
 
         for (gene in genes) {
             if (otherInnovations.containsKey(gene.innovation)) {
@@ -115,7 +115,7 @@ class Genome : Cloneable {
         return weightDelta / occurences
     }
 
-    fun setCanMutate(enable : Boolean) {
+    fun mutateEnabledState(enable : Boolean) {
         val candidates : MutableList<Gene> = ArrayList()
         genes.filterTo(candidates) { it.enabled != enable }
 
@@ -128,11 +128,9 @@ class Genome : Cloneable {
     }
 
     fun pointMutate() {
-        val step = stepSize
-
         for (gene in genes) {
             if (ThreadLocalRandom.current().nextDouble() < PERTURB_CHANCE) {
-                gene.weight = gene.weight + ThreadLocalRandom.current().nextDouble() * step * 2 - step
+                gene.weight += ThreadLocalRandom.current().nextDouble() * stepSize * 2 - stepSize
             } else {
                 gene.weight = ThreadLocalRandom.current().nextDouble() * 4 - 2
             }
@@ -172,11 +170,11 @@ class Genome : Cloneable {
         var neuron2 = randomNeuron(true)
 
         val newLink = Gene()
-        if (neuron1 <= INPUTS && neuron2 <= INPUTS) {
+        if (neuron1 < INPUTS && neuron2 < INPUTS) {
             return
         }
 
-        if (neuron2 <= INPUTS) {
+        if (neuron2 < INPUTS) {
             val temp = neuron1
             neuron1 = neuron2
             neuron2 = temp
@@ -293,7 +291,7 @@ class Genome : Cloneable {
         p = enableMutationChance
         while (p > 0) {
             if (ThreadLocalRandom.current().nextDouble() < p) {
-                setCanMutate(true)
+                mutateEnabledState(true)
             }
             p -= 1
         }
@@ -301,7 +299,7 @@ class Genome : Cloneable {
         p = disableMutationChance
         while (p > 0) {
             if (ThreadLocalRandom.current().nextDouble() < p) {
-                setCanMutate(false)
+                mutateEnabledState(false)
             }
             p -= 1
         }
