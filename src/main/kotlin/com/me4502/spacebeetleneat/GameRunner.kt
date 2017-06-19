@@ -5,8 +5,8 @@ import com.badlogic.gdx.Input
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration
 import com.badlogic.gdx.math.Rectangle
-import com.badlogic.gdx.math.Vector3
 import com.me4502.spacebeetle.Entities.Debris
+import com.me4502.spacebeetle.Entities.Player
 import com.me4502.spacebeetle.Overlays.StartOverlay
 import com.me4502.spacebeetle.SpaceBeetle
 import com.me4502.spacebeetle.SpaceBeetle.AI_MODE
@@ -15,9 +15,7 @@ import com.me4502.spacebeetle.desktop.DesktopLauncher
 import com.me4502.spacebeetleneat.struct.Genome
 import com.me4502.spacebeetleneat.struct.Population
 import com.me4502.spacebeetleneat.struct.Species
-import java.io.BufferedReader
 import java.io.File
-import java.io.FileReader
 import java.io.PrintWriter
 
 class GameRunner(var callback: () -> Unit) {
@@ -38,36 +36,23 @@ class GameRunner(var callback: () -> Unit) {
 
         // 30 * 40
         // -1 = player, 0 = blank, 1 = ground.
-        val xWidth = GAME_WIDTH / INPUT_WIDTH
-        val yHeight = GAME_HEIGHT / INPUT_HEIGHT
+        val xWidth = 16
+        val yHeight = 16
 
-        for (y in 0..GAME_HEIGHT-yHeight step yHeight) {
-            for (x in 0..GAME_WIDTH-xWidth step xWidth) {
-                var inputValue = 0
+        val player : Player = SpaceBeetle.inst().game.player
 
-                val rect2 = Rectangle(x.toFloat(), y.toFloat(), xWidth.toFloat(), yHeight.toFloat())
+        for (y in -17..17 step 17) {
+            for (x in -16..16 step 16) {
+                val rect2 = Rectangle(x.toFloat() + player.position.x, y.toFloat() + player.position.y, xWidth.toFloat(), yHeight.toFloat())
 
-                for (entity in gameInstance!!.game.entities) {
-                    if (entity is Debris) {
-                        val converted = gameInstance!!.camera.project(Vector3(entity.sprite.x, entity.sprite.y, 0F))
-                        val posX = converted.x
-                        val posY = converted.y
-
-                        val rect1 = Rectangle(posX, posY, entity.sprite.width, entity.sprite.height)
-
-                        if (rect1.overlaps(rect2)) {
-                            inputValue = 1
-                            break
-                        }
-                    }
-                }
+                val inputValue = if (gameInstance!!.game.entities
+                        .filterIsInstance<Debris>()
+                        .map { Rectangle(it.sprite.x, it.sprite.y, it.sprite.width, it.sprite.height) }
+                        .any { it.overlaps(rect2) }) 1 else 0
 
                 inputs.add(inputValue)
             }
         }
-
-        inputs.add(gameInstance!!.game.player.position.x.toInt())
-        inputs.add(gameInstance!!.game.player.position.y.toInt())
 
         lastInput.clear()
         lastInput.addAll(inputs)
@@ -91,6 +76,9 @@ class GameRunner(var callback: () -> Unit) {
         config.title = "SpaceBeetle Runner"
         config.width = GAME_WIDTH
         config.height = GAME_HEIGHT
+        config.foregroundFPS = 60
+        config.backgroundFPS = Integer.MAX_VALUE
+        config.vSyncEnabled = false
         AI_MODE = true
         gameInstance = AutomatedSpaceBeetle(DesktopLauncher())
         LwjglApplication(gameInstance, config)
@@ -193,15 +181,14 @@ class GameRunner(var callback: () -> Unit) {
                         overlay.interact(-90, -90)
                     }
 
-                    // The fitness heavily favours score. Time is in there only so that it favours the faster of two identical scores.
-                    val fitness = (SpaceBeetle.inst().getFileStorage().lastscore * 2) - (pool.currentFrame / 60)
+                    val fitness = (SpaceBeetle.inst().getFileStorage().lastscore) // Fitness is just score.
                     genome.fitness = fitness
                     if (fitness > pool.maxFitness) {
                         pool.maxFitness = fitness
                         gameRunner!!.save("backup.${pool.generation}.dat")
                     }
 
-                    println("Species: ${pool.currentSpecies}, Genome: ${pool.currentGenome}, Fitness: $fitness, Frame: ${pool
+                    println("Generation: ${pool.generation} Species: ${pool.currentSpecies}, Genome: ${pool.currentGenome}, Fitness: $fitness, Frame: ${pool
                             .currentFrame}")
 
                     gameRunner!!.callback.invoke()
