@@ -10,7 +10,7 @@ val GAME_WIDTH = 480
 val GAME_HEIGHT = 640
 
 val OUTPUT_INDEX = arrayOf(Input.Keys.A, Input.Keys.S, Input.Keys.W, Input.Keys.D)
-val INPUTS = 9
+val INPUTS = 25
 
 val PERTURB_CHANCE = 0.90
 val CROSSOVER_CHANCE = 0.75

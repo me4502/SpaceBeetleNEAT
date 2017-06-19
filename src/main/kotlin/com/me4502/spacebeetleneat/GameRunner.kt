@@ -41,8 +41,8 @@ class GameRunner(var callback: () -> Unit) {
 
         val player : Player = SpaceBeetle.inst().game.player
 
-        for (y in -17..17 step 17) {
-            for (x in -16..16 step 16) {
+        for (y in -34..34 step 17) {
+            for (x in -32..32 step 16) {
                 val rect2 = Rectangle(x.toFloat() + player.position.x, y.toFloat() + player.position.y, xWidth.toFloat(), yHeight.toFloat())
 
                 val inputValue = if (gameInstance!!.game.entities
