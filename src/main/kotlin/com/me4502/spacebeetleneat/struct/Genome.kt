@@ -19,7 +19,6 @@ class Genome : Cloneable {
     val genes : MutableList<Gene> = ArrayList()
     var network : Network? = null
     var fitness = Int.MIN_VALUE
-    var adjustedFitness = 0
     var maxNeuron = 0
     var globalRank = 0
     var mutateConnectionsChance = MUTATE_CONNECTIONS_CHANCE
@@ -326,6 +325,6 @@ class Genome : Cloneable {
     }
 
     override fun toString(): String {
-        return "Genome[fitness=$fitness]"
+        return "Genome[fitness=$fitness,genes=$genes,globalRank=$globalRank]"
     }
 }

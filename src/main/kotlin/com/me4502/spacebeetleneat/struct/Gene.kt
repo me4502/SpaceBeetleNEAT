@@ -16,4 +16,8 @@ class Gene : Cloneable {
         gene.innovation = innovation
         return gene
     }
+
+    override fun toString(): String {
+        return "Gene[input=$input, output=$output, weight=$weight, enabled=$enabled, innovation=$innovation]"
+    }
 }

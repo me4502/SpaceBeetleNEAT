@@ -31,7 +31,7 @@ class Population {
 
     fun cullSpecies(cutToOne : Boolean) {
         for (specie in species) {
-            specie.genomes.sortBy(Genome::fitness)
+            specie.genomes.sortByDescending(Genome::fitness)
             var remaining = Math.ceil(specie.genomes.size / 2.0).toInt()
             if (cutToOne) {
                 remaining = 1
@@ -82,7 +82,7 @@ class Population {
         val survived : MutableList<Species> = ArrayList()
 
         for (specie in species) {
-            specie.genomes.sortBy(Genome::fitness)
+            specie.genomes.sortByDescending(Genome::fitness)
 
             if (specie.genomes[0].fitness > specie.topFitness) {
                 specie.topFitness = specie.genomes[0].fitness
